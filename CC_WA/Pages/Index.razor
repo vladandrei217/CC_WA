@@ -1,0 +1,332 @@
+﻿@page "/"
+@using Radzen.Blazor
+<PageTitle>Calculator dobanda compusa</PageTitle>
+<h3>Calculator Dobândă Compusă</h3>
+<RadzenDropDown @bind-Value="selectedProductID"
+                Data="@products"
+                TextProperty="ProductName"
+                ValueProperty="ProductID"
+                AllowClear="true"
+                Placeholder="Selectati un produs"
+                Style="width: 100%; max-width: 400px;"
+                Change="OnProductSelected" />
+<br />
+<br />
+<RadzenButton Text="Adaugă Perioadă" Click="@adaugaPerioada" Style="margin-bottom: 10px;" />
+<RadzenDataGrid Data="@perioadeIntrare" TItem="PerioadaIntrare" AllowPaging="true" PageSize="5"
+                AllowSorting="true" AllowFiltering="false" EditMode="DataGridEditMode.Single"
+                RowUpdate="@OnUpdateRow" @ref="dataGrid">
+    <Columns>
+        <RadzenDataGridColumn TItem="PerioadaIntrare" Property="NrLuni" Title="Număr Luni">
+            <EditTemplate Context="data">
+                <RadzenNumeric @bind-Value="data.NrLuni" Min="1" Style="width: 100%;" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="PerioadaIntrare" Property="SumaDepusa" Title="Sumă Depusă">
+            <EditTemplate Context="data">
+                <RadzenNumeric @bind-Value="data.SumaDepusa" Min="0" Step="0.01" Style="width: 100%;" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="PerioadaIntrare" Context="data">
+            <Template Context="data">
+                <RadzenButton Icon="edit" Click="@(args => dataGrid.EditRow(data))" Disabled="@(dataGrid.IsRowInEditMode(data))" />
+                <RadzenButton Icon="save" Click="@(args => dataGrid.UpdateRow(data))" Visible="@(dataGrid.IsRowInEditMode(data))" Style="margin-left: 5px;" />
+                <RadzenButton Icon="cancel" Click="@(args => dataGrid.CancelEditRow(data))" Visible="@(dataGrid.IsRowInEditMode(data))" Style="margin-left: 5px;" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+<br />
+<br />
+<div style="display: flex; justify-content: center; margin: 20px;">
+    <RadzenButton Text="Toate datele" Click="@(() =>dataAfisata = 4)" style="margin: 0 10px;" />
+    <RadzenButton Text="Date lunare" Click="@(() => dataAfisata = 0)" style="margin: 0 10px;" />
+    <RadzenButton Text="Date anuale" Click="@(() => dataAfisata = 1)" style="margin: 0 10px;" />
+    <RadzenButton Text="Date grafice (pie)" Click="@(() => dataAfisata = 2)" style="margin: 0 10px;" />
+    <RadzenButton Text="Date grafice  (line)" Click="@(() =>dataAfisata = 3)" style="margin: 0 10px;" />
+</div>
+@if (dataAfisata == 4 || dataAfisata == 0)
+{
+        <h4>Sume lunare</h4>
+        <RadzenDataGrid Data="@GetDetailedData()" TItem="MonthDetail" AllowPaging="true" PageSize="10" ShowPagingSummary="true"
+                        AllowSorting="true" AllowFiltering="true" ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or" Style="margin-top: 20px;">
+            <Columns>
+                <RadzenDataGridColumn Property="MonthNumber" Title="Număr Lună" Width="120px" TextAlign="TextAlign.Center" />
+                <RadzenDataGridColumn Property="AmountAdded" Title="Sumă Adăugată" FormatString="{0:C}" Width="160px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn Property="CumulativeAmountAdded" Title="Sumă Totală Adăugată" FormatString="{0:C}" Width="200px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn Property="TotalWithInterest" Title="Sumă Totală cu Dobândă" FormatString="{0:C}" Width="220px" TextAlign="TextAlign.Right" />
+            </Columns>
+        </RadzenDataGrid>
+}
+
+@if (dataAfisata == 4 || dataAfisata == 1)
+{
+        <h4>Sume anuale</h4>
+        <RadzenDataGrid @ref="dataGridYear" Data="@yearlyDetails" TItem="YearDetail" AllowPaging="true" PageSize="5">
+            <Columns>
+                <RadzenDataGridColumn Property="Year" Title="An" />
+                <RadzenDataGridColumn Property="TotalInvested" FormatString="{0:C}" Title="Suma investita" />
+                <RadzenDataGridColumn Property="TotalWithInterest" FormatString="{0:C}" Title="Suma totala" />
+            </Columns>
+        </RadzenDataGrid>
+}
+
+@if (dataAfisata == 4 || dataAfisata == 2)
+{
+        <h4>Pie chart</h4>
+        <RadzenChart @ref="pieRef" SeriesClick="@OnSeriesClick">
+        <RadzenPieSeries Data="@pieChartData" Title="Suma totala vs investita"
+                         CategoryProperty="Category" ValueProperty="Value">
+            <RadzenSeriesDataLabels Visible="true" />
+        </RadzenPieSeries>
+    </RadzenChart>    
+}
+
+
+@if (dataAfisata == 4 || dataAfisata == 3)
+{
+        <h4>Line chart</h4>
+        <RadzenChart>
+            <RadzenChartTooltipOptions Shared="true" />
+            <RadzenLineSeries Data="@monthlyData"
+                              CategoryProperty="MonthNumber"
+                              Title="Suma totala"
+                              ValueProperty="TotalWithInterest"
+                              LineType="LineType.Solid">
+                <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" />
+                <RadzenSeriesDataLabels Visible="false" />
+            </RadzenLineSeries>
+            <RadzenLineSeries Data="@monthlyData"
+                              CategoryProperty="MonthNumber"
+                              Title="Suma investita"
+                              ValueProperty="CumulativeAmountAdded"
+                              LineType="LineType.Dashed">
+                <RadzenMarkers Visible="true" MarkerType="MarkerType.Square" />
+                <RadzenSeriesDataLabels Visible="false" />
+            </RadzenLineSeries>
+            <RadzenCategoryAxis Padding="20">
+                <RadzenAxisTitle Text="Luni" />
+            </RadzenCategoryAxis>
+            <RadzenValueAxis Formatter="@FormatAsUSD">
+                <RadzenGridLines Visible="true" />
+                <RadzenAxisTitle Text="Suma totala" />
+            </RadzenValueAxis>
+        </RadzenChart>
+}
+
+
+@code {
+    private float dobanda = 0.08f;
+    private List<Product> products = new List<Product>
+    {
+        new Product { ProductID = 1, ProductName = "Produs 1 - 8% dobanda" },
+        new Product { ProductID = 2, ProductName = "Produs 2 - 10% dobanda" },
+        new Product { ProductID = 3, ProductName = "Produs 3 - 12% dobanda" }
+    };
+    private int? selectedProductID = 1;
+    private RadzenDataGrid<PerioadaIntrare> dataGrid;
+    private RadzenDataGrid<YearDetail> dataGridYear;
+    private RadzenChart pieRef;
+    // public List<PerioadaIntrare> perioadeIntrare = new List<PerioadaIntrare>();
+    public List<YearDetail> yearlyDetails = new List<YearDetail>();
+    public List<PieChartData> pieChartData = new List<PieChartData>();
+    private List<PortfolioData> portfolioData = new List<PortfolioData>();
+    private List<MonthDetail> monthlyData;
+    private PerioadaIntrare editRow = null;
+    public int dataAfisata = 4;
+    public List<PerioadaIntrare> perioadeIntrare = new List<PerioadaIntrare>
+    {
+        new PerioadaIntrare { NrLuni = 1, SumaDepusa = 100 }
+    };
+    private string selectedProductName => products.FirstOrDefault(p => p.ProductID == selectedProductID)?.ProductName;
+    private void OnProductSelected(object value)
+    {
+        if (selectedProductID == 1)
+        {
+            dobanda = 0.08f;
+        }
+        else if (selectedProductID == 2)
+        {
+            dobanda = 0.10f;
+        }
+        else
+        {
+            dobanda = 0.12f;
+        }
+
+        dataGrid.Reload();
+        CalculateYearlyData();
+        if (dataGridYear != null)
+        {
+            dataGridYear.Reload();
+        }
+        monthlyData = GetDetailedData();
+        pieChartData = GetPieChartData(monthlyData);
+
+        StateHasChanged();
+    }
+    protected override void OnInitialized()
+    {
+        // Call the method to get detailed data
+        monthlyData = GetDetailedData();
+        CalculateYearlyData();
+        pieChartData = GetPieChartData(monthlyData);
+    }
+    public void adaugaPerioada()
+    {
+        perioadeIntrare.Add(new PerioadaIntrare());
+        StateHasChanged();
+        dataGrid.Reload();
+        if (dataGridYear != null)
+        {
+            dataGridYear.Reload();
+        }
+    }
+    public void EditRow(PerioadaIntrare period)
+    {
+        editRow = period;
+    }
+    public void SaveRow(PerioadaIntrare period)
+    {
+        editRow = null;
+        // Optionally, you can handle save logic here if needed.
+    }
+    public void CancelEdit(PerioadaIntrare period)
+    {
+        editRow = null;
+        // Optionally, you can revert any changes made during editing.
+    }
+    public void OnUpdateRow(PerioadaIntrare period)
+    {
+        monthlyData = GetDetailedData();
+        CalculateYearlyData();
+        if (dataGridYear != null)
+        {
+            dataGridYear.Reload();
+        }
+        pieChartData = GetPieChartData(monthlyData);
+        StateHasChanged();
+        // Handle the logic when a row update occurs.
+    }
+    public List<MonthDetail> GetDetailedData()
+    {
+        var details = new List<MonthDetail>();
+        float cumulativeAmountAdded = 0;
+        float cumulativeAmountWithInterest = 0;
+        float monthlyInterestRate = 1 + (dobanda / 12); // 10% annual interest rate converted to monthly
+        int monthCounter = 1;
+        foreach (var period in perioadeIntrare)
+        {
+            for (int i = 0; i < period.NrLuni; i++)
+            {
+                float amountAdded = period.SumaDepusa;
+                cumulativeAmountAdded += amountAdded;
+                cumulativeAmountWithInterest = cumulativeAmountWithInterest * monthlyInterestRate + amountAdded; // Applying monthly interest
+                details.Add(new MonthDetail
+                    {
+                        MonthNumber = monthCounter++,
+                        AmountAdded = amountAdded,
+                        CumulativeAmountAdded = cumulativeAmountAdded,
+                        TotalWithInterest = cumulativeAmountWithInterest
+                    });
+            }
+        }
+        return details;
+    }
+    private void CalculateYearlyData()
+    {
+        yearlyDetails.Clear();
+        float cumulativeAmountWithInterest = 0;
+        int totalMonths = 0; // Cumulative month counter
+        foreach (var period in perioadeIntrare)
+        {
+            for (int i = 0; i < period.NrLuni; i++)
+            {
+                // Calculate the year based on totalMonths
+                int year = DateTime.Now.Year + (totalMonths / 12);
+                // Apply monthly interest and add current deposit
+                cumulativeAmountWithInterest = cumulativeAmountWithInterest * (1 + dobanda / 12) + period.SumaDepusa;
+                // Find or create the yearly detail entry
+                var yearDetail = yearlyDetails.FirstOrDefault(y => y.Year == year);
+                if (yearDetail == null)
+                {
+                    yearDetail = new YearDetail
+                        {
+                            Year = year,
+                            TotalInvested = 0,
+                            TotalWithInterest = 0
+                        };
+                    yearlyDetails.Add(yearDetail);
+                }
+                // Accumulate totals for the year
+                yearDetail.TotalInvested += period.SumaDepusa;
+                yearDetail.TotalWithInterest = cumulativeAmountWithInterest;
+                totalMonths++; // Increment cumulative month counter
+            }
+        }
+    }
+    private List<PieChartData> GetPieChartData(List<MonthDetail> detailedData)
+    {
+        // Calculate total invested and total amount with interest
+        float totalInvested = 0;
+        float totalWithInterest = 0;
+        foreach (var detail in detailedData)
+        {
+            totalInvested += detail.AmountAdded;
+            totalWithInterest = detail.TotalWithInterest; // The last entry will be the total
+        }
+        return new List<PieChartData>
+        {
+            new PieChartData { Category = "Suma investita", Value = (int)totalInvested },
+            new PieChartData { Category = "Suma totala", Value = (int)totalWithInterest }
+        };
+    }
+    private string GetMonthName(int monthIndex)
+    {
+        return new DateTime(1, monthIndex + 1, 1).ToString("MMMM");
+    }
+    private string FormatAsUSD(object value)
+    {
+        return $"${value:N0}"; // Format value as USD
+    }
+    private void OnSeriesClick(SeriesClickEventArgs args)
+    {
+        // Handle the click event on the pie chart series
+        // You can add logic here to respond to clicks on pie slices
+        Console.WriteLine($"Clicked on: {args.Category} with value: {args.Value}");
+    }
+    public class PerioadaIntrare
+    {
+        public int NrLuni { get; set; }
+        public float SumaDepusa { get; set; }
+    }
+    public class MonthDetail
+    {
+        public int MonthNumber { get; set; }
+        public float AmountAdded { get; set; }
+        public float CumulativeAmountAdded { get; set; }
+        public float TotalWithInterest { get; set; }
+    }
+    public class YearDetail
+    {
+        public int Year { get; set; }
+        public float TotalInvested { get; set; }
+        public float TotalWithInterest { get; set; }
+    }
+    public class PieChartData
+    {
+        public string Category { get; set; }
+        public int Value { get; set; }
+    }
+    public class PortfolioData
+    {
+        public string Month { get; set; }
+        public float InvestedAmount { get; set; }
+        public float TotalValue { get; set; }
+    }
+    public class Product
+    {
+        public int ProductID { get; set; }
+        public string ProductName { get; set; }
+    }
+}
