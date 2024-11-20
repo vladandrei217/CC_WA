@@ -22,7 +22,7 @@
                 <RadzenNumeric @bind-Value="data.NrLuni" Min="1" Style="width: 100%;" />
             </EditTemplate>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="PerioadaIntrare" Property="SumaDepusa" Title="Sumă Depusă">
+        <RadzenDataGridColumn TItem="PerioadaIntrare" Property="SumaDepusa" FormatString="{0:0.00 €}" Title="Sumă Depusă">
             <EditTemplate Context="data">
                 <RadzenNumeric @bind-Value="data.SumaDepusa" Min="0" Step="0.01" Style="width: 100%;" />
             </EditTemplate>
@@ -48,13 +48,13 @@
 @if (dataAfisata == 4 || dataAfisata == 0)
 {
         <h4>Sume lunare</h4>
-        <RadzenDataGrid Data="@GetDetailedData()" TItem="MonthDetail" AllowPaging="true" PageSize="10" ShowPagingSummary="true"
+    <RadzenDataGrid Data="@GetDetailedData()" TItem="MonthDetail" AllowPaging="true" PageSize="10" ShowPagingSummary="true" PageSizeOptions="PageSizes"
                         AllowSorting="true" AllowFiltering="true" ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or" Style="margin-top: 20px;">
             <Columns>
                 <RadzenDataGridColumn Property="MonthNumber" Title="Număr Lună" Width="120px" TextAlign="TextAlign.Center" />
-                <RadzenDataGridColumn Property="AmountAdded" Title="Sumă Adăugată" FormatString="{0:C}" Width="160px" TextAlign="TextAlign.Right" />
-                <RadzenDataGridColumn Property="CumulativeAmountAdded" Title="Sumă Totală Adăugată" FormatString="{0:C}" Width="200px" TextAlign="TextAlign.Right" />
-                <RadzenDataGridColumn Property="TotalWithInterest" Title="Sumă Totală cu Dobândă" FormatString="{0:C}" Width="220px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn Property="AmountAdded" Title="Sumă Adăugată" FormatString="{0:0.00 €}" Width="160px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn Property="CumulativeAmountAdded" Title="Sumă Totală Adăugată" FormatString="{0:0.00 €}" Width="200px" TextAlign="TextAlign.Right" />
+                <RadzenDataGridColumn Property="TotalWithInterest" Title="Sumă Totală cu Dobândă" FormatString="{0:0.00 €}" Width="220px" TextAlign="TextAlign.Right" />
             </Columns>
         </RadzenDataGrid>
 }
@@ -62,13 +62,13 @@
 @if (dataAfisata == 4 || dataAfisata == 1)
 {
         <h4>Sume anuale</h4>
-        <RadzenDataGrid @ref="dataGridYear" Data="@yearlyDetails" TItem="YearDetail" AllowPaging="true" PageSize="5">
+    <RadzenDataGrid @ref="dataGridYear" Data="@yearlyDetails" TItem="YearDetail" AllowPaging="true" PageSize="10" PageSizeOptions="PageSizes">
             <Columns>
                 <RadzenDataGridColumn Property="Year" Title="An" />
-                <RadzenDataGridColumn Property="TotalInvested" FormatString="{0:C}" Title="Suma investita" />
-                <RadzenDataGridColumn Property="TotalWithInterest" FormatString="{0:C}" Title="Suma totala" />
+                <RadzenDataGridColumn Property="TotalInvested" FormatString="{0:0.00 €}" Title="Suma investita" />
+                <RadzenDataGridColumn Property="TotalWithInterest" FormatString="{0:0.00 €}" Title="Suma totala" />
             </Columns>
-        </RadzenDataGrid>
+    </RadzenDataGrid>
 }
 
 @if (dataAfisata == 4 || dataAfisata == 2)
@@ -76,8 +76,8 @@
         <h4>Pie chart</h4>
         <RadzenChart @ref="pieRef" SeriesClick="@OnSeriesClick">
         <RadzenPieSeries Data="@pieChartData" Title="Suma totala vs investita"
-                         CategoryProperty="Category" ValueProperty="Value">
-            <RadzenSeriesDataLabels Visible="true" />
+                         CategoryProperty="Category" ValueProperty="Value" >
+            <RadzenSeriesDataLabels Visible="true"  />
         </RadzenPieSeries>
     </RadzenChart>    
 }
@@ -107,7 +107,7 @@
             <RadzenCategoryAxis Padding="20">
                 <RadzenAxisTitle Text="Luni" />
             </RadzenCategoryAxis>
-            <RadzenValueAxis Formatter="@FormatAsUSD">
+        <RadzenValueAxis FormatString="{0:0.00 €}">
                 <RadzenGridLines Visible="true" />
                 <RadzenAxisTitle Text="Suma totala" />
             </RadzenValueAxis>
@@ -125,6 +125,7 @@
     };
     private int? selectedProductID = 1;
     private RadzenDataGrid<PerioadaIntrare> dataGrid;
+    private List<int> PageSizes = new List<int> { 10, 25, 50, 100, 200, 300, 500 };
     private RadzenDataGrid<YearDetail> dataGridYear;
     private RadzenChart pieRef;
     // public List<PerioadaIntrare> perioadeIntrare = new List<PerioadaIntrare>();
